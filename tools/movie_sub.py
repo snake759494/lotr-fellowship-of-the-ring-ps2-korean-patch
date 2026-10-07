@@ -2,7 +2,8 @@
 
 subs(movie/subs/<이름>.tsv: 시작초 TAB 끝초 TAB 문장, 줄바꿈 \\n)가 걸린 프레임만 디코드 -> 자막 합성
 -> IPU 인트라로 재인코딩. 프레임 크기·오프셋은 원본 그대로 두고(자원 파일 크기 고정), 새 프레임이
-원래 자리보다 작아지는 가장 고운 양자화 값을 고른 뒤 남는 바이트는 0 으로 채운다.
+원래 자리에 들어가는 가장 고운 양자화 값을 고르고, 계수 코드를 이스케이프 코드로 바꿔 정확히 같은
+바이트 수로 맞춘다. 엔진은 프레임을 끊김 없이 IPU 에 이어 넣으므로 0 바이트가 끼면 멈춘다.
 """
 import os, sys, struct, subprocess
 import numpy as np
@@ -105,22 +106,11 @@ def process(vdu_bytes, subs, tmp, log=print):
         for k, (y, u, v) in zip(range(f0, f1), decode_frames(frames, W, H, tmp)):
             cap = offs[k + 1] - offs[k]
             y2, u2, v2 = compose(y, u, v, fill, edge)
-            for q in Q_STEPS:
-                e = ipu.encode(y2, u2, v2, q)
-                if len(e) <= cap:
-                    break
-            else:
-                raise RuntimeError(f'프레임 {k} 이 원래 크기({cap})에 들어가지 않음')
-            newf[k] = e
+            e, q = ipu.encode_exact(y2, u2, v2, cap)
+            if e is None:
+                raise RuntimeError(f'프레임 {k} 을 원래 크기({cap})에 맞출 수 없음')
+            d[base + offs[k]:base + offs[k + 1]] = e
             stats.append(q)
-    # 빈틈없이 다시 이어 붙이기
-    body = bytearray(); noffs = []
-    for k in range(N):
-        noffs.append(len(body))
-        body += newf.get(k, bytes(d[base + offs[k]:base + offs[k + 1]]))
-    assert len(body) <= dt['size']
-    d[base:base + dt['size']] = body + b'\0' * (dt['size'] - len(body))
-    struct.pack_into('<%dI' % N, d, hd['off'] + 7 * 4, *noffs)
     if stats:
         log(f'  자막 프레임 {len(stats)}, 양자화 평균 {sum(stats) / len(stats):.1f}, 최대 {max(stats)}')
     return bytes(d)

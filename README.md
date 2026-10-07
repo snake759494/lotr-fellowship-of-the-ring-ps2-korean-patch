@@ -1,23 +1,23 @@
-# 반지의 제왕: 반지 원정대 PS2 한글 패치 v1.1
+# 반지의 제왕: 반지 원정대 PS2 한글 패치 v1.2
 
 **The Lord of the Rings: The Fellowship of the Ring (USA), SLUS-20520**용 비공식 한글 패치입니다.
 
 ## 다운로드 / 적용
 
-[정식 릴리즈 v1.1](https://github.com/snake759494/lotr-fellowship-of-the-ring-ps2-korean-patch/releases/tag/v1.1)에서 `LOTR_Fellowship_of_the_Ring_KO_v1.1.xdelta` 하나를 받으세요.
+[정식 릴리즈 v1.2](https://github.com/snake759494/lotr-fellowship-of-the-ring-ps2-korean-patch/releases/tag/v1.2)에서 `LOTR_Fellowship_of_the_Ring_KO_v1.2.xdelta` 하나를 받으세요.
 
 수정하지 않은 북미판 원본 ISO에 xdelta3로 적용합니다. 다른 지역판·개정판·이미 한글화한 ISO에는 적용하지 않습니다. xdelta 실행 파일과 게임은 제공하지 않습니다.
 
 ```powershell
-xdelta3 -d -s "Lord of the Rings, The - The Fellowship of the Ring (USA).iso" LOTR_Fellowship_of_the_Ring_KO_v1.1.xdelta Lord_of_the_Rings_Fellowship_of_the_Ring_KO.iso
+xdelta3 -d -s "Lord of the Rings, The - The Fellowship of the Ring (USA).iso" LOTR_Fellowship_of_the_Ring_KO_v1.2.xdelta Lord_of_the_Rings_Fellowship_of_the_Ring_KO.iso
 Get-FileHash .\Lord_of_the_Rings_Fellowship_of_the_Ring_KO.iso -Algorithm SHA256
 ```
 
 | 대상 | SHA-256 |
 |---|---|
 | 원본 ISO | `c966d5f65ce6308ca8c1afe0f0b8dfa2dd41b642ca7959d59034c2bce989ddb2` |
-| 완성 ISO | `2c531491df8749d08ca4e7ac5b5056698887686aaa3686460f6bb3407121e936` |
-| xdelta | `a80afa36b9118808b472467e59bd3c6fae13647457e88aaa72c3be26ace6e1e7` |
+| 완성 ISO | `d3a0093bde5fd64e00b35daca62529ec98d381084a46a779e506a3c870cc570a` |
+| xdelta | `41f8766ecfb2b47c7e8fe5f43ecc6b4a6898a9832a6414cc266ad6bef702610b` |
 
 원본 ISO 크기: **2,403,368,960바이트**, 완성 ISO 크기: **2,407,677,952바이트**. 적용 후 새로 부팅하세요. 원본 게임의 세이브스테이트는 사용하지 마세요.
 

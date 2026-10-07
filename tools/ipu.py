@@ -69,7 +69,7 @@ def _dc_put(bw, diff, tab):
         bw.put(diff if diff > 0 else diff + (1 << size) - 1, size)
 
 
-def encode(y, u, v, qcode):
+def _tokens(y, u, v, qcode):
     """y: HxW, u/v: H/2xW/2 (uint8). qcode 1..31 (qscale = 2*qcode)."""
     H, W = y.shape
     qs = 2 * qcode
@@ -83,31 +83,81 @@ def encode(y, u, v, qcode):
         flat[..., 0] = dc
         return flat
     QY, QU, QV = quant(FY), quant(FU), quant(FV)
-    bw = Bits(); bw.put(FLAGS, 8)
+    toks = [(FLAGS, 8, 0)]          # (코드, 길이, 이스케이프로 바꿀 때 늘어나는 비트 수)
+    esc = []                        # 바꿀 수 있는 토큰: (토큰 번호, 이스케이프 코드)
     last = [512, 512, 512]
     for my in range(H // 16):
         for mx in range(W // 16):
             if mx or my:
-                bw.put(1, 1)                                   # 주소 증가 1
+                toks.append((1, 1, 0))                         # 주소 증가 1
             if mx == 0 and my == 0:
-                bw.put(1, 2); bw.put(qcode, 5)                 # 인트라 + 양자화
+                toks.append((1, 2, 0)); toks.append((qcode, 5, 0))   # 인트라 + 양자화
             else:
-                bw.put(1, 1)                                   # 인트라
+                toks.append((1, 1, 0))                         # 인트라
             blks = [(QY[2 * my, 2 * mx], 0), (QY[2 * my, 2 * mx + 1], 0), (QY[2 * my + 1, 2 * mx], 0),
                     (QY[2 * my + 1, 2 * mx + 1], 0), (QU[my, mx], 1), (QV[my, mx], 2)]
             for blk, c in blks:
-                dc = int(blk[0])
-                _dc_put(bw, dc - last[c], DC_LUM if c == 0 else DC_CHR); last[c] = dc
+                dc = int(blk[0]); diff = dc - last[c]; last[c] = dc
+                a_ = abs(diff); size = a_.bit_length(); tab = DC_LUM if c == 0 else DC_CHR
+                toks.append(tab[size] + (0,))
+                if size:
+                    toks.append((diff if diff > 0 else diff + (1 << size) - 1, size, 0))
                 nz = np.nonzero(blk[1:])[0]
                 prev = 0
                 for k in nz:
                     lvl = int(blk[1 + k]); run = int(k) - prev; prev = int(k) + 1
-                    a = abs(lvl)
-                    vc = RL.get((run, a))
+                    vc = RL.get((run, abs(lvl)))
+                    ec = (((ESC[0] << 6 | run) << 12) | (lvl & 0xfff), 24)
                     if vc:
-                        bw.put(vc[0], vc[1]); bw.put(1 if lvl < 0 else 0, 1)
+                        code = (vc[0] << 1) | (1 if lvl < 0 else 0)
+                        esc.append((len(toks), ec, 24 - vc[1] - 1))
+                        toks.append((code, vc[1] + 1, 0))
                     else:
-                        bw.put(*ESC); bw.put(run, 6); bw.put(lvl & 0xfff, 12)
-                bw.put(*EOB)
+                        toks.append(ec + (0,))
+                toks.append(EOB + (0,))
+    return toks, esc
+
+
+def _write(toks):
+    bw = Bits()
+    for c, n, _ in toks:
+        bw.put(c, n)
     bw.align()
-    return bytes(bw.out) + b'\x00\x00\x01\xb0'
+    return bytes(bw.out) + bytes([0, 0, 1, 0xb0])
+
+
+def _bits(toks):
+    return sum(t[1] for t in toks)
+
+
+def encode(y, u, v, qcode):
+    return _write(_tokens(y, u, v, qcode)[0])
+
+
+def encode_exact(y, u, v, size, qs=range(1, 32)):
+    """정확히 size 바이트가 되는 프레임(0 채움 없이). 가장 고운 양자화부터 시도하고,
+    모자라는 비트는 일반 계수 코드를 같은 값의 24비트 이스케이프 코드로 바꿔 채운다."""
+    lo, hi = 8 * (size - 4) - 7, 8 * (size - 4)     # 정렬 전 비트 수 허용 범위
+    for q in qs:
+        toks, esc = _tokens(y, u, v, q)
+        n = _bits(toks)
+        if n > hi:
+            continue
+        if n + sum(e[2] for e in esc) < lo:
+            return None, q                           # 더 거친 q 는 더 작아지므로 불가
+        need = lo - n
+        # 늘어나는 비트가 큰 것부터: 남은 필요량을 넘지 않는 최대 증가분을 고른다
+        by = {}
+        for i, ec, inc in esc:
+            by.setdefault(inc, []).append((i, ec))
+        incs = sorted(by, reverse=True)
+        while need > 0:
+            pick = next((d for d in incs if by[d] and d <= need + 7), None)
+            if pick is None:
+                pick = next(d for d in reversed(incs) if by[d])
+            i, ec = by[pick].pop()
+            toks[i] = ec + (0,); need -= pick
+        out = _write(toks)
+        assert len(out) == size, (len(out), size)
+        return out, q
+    return None, None
