@@ -24,8 +24,8 @@ python -X utf8 tools/build.py          # 글리프·코드·문자열 생성 후
 ## 패치 생성/복원
 
 ```powershell
-xdelta3 -e -9 -S djw -s "Lord of the Rings, The - The Fellowship of the Ring (USA).iso" Lord_of_the_Rings_Fellowship_of_the_Ring_KO.iso LOTR_Fellowship_of_the_Ring_KO_v1.0.xdelta
-xdelta3 -d -s "Lord of the Rings, The - The Fellowship of the Ring (USA).iso" LOTR_Fellowship_of_the_Ring_KO_v1.0.xdelta roundtrip.iso
+xdelta3 -e -9 -S djw -s "Lord of the Rings, The - The Fellowship of the Ring (USA).iso" Lord_of_the_Rings_Fellowship_of_the_Ring_KO.iso LOTR_Fellowship_of_the_Ring_KO_v1.1.xdelta
+xdelta3 -d -s "Lord of the Rings, The - The Fellowship of the Ring (USA).iso" LOTR_Fellowship_of_the_Ring_KO_v1.1.xdelta roundtrip.iso
 ```
 
 xdelta 버전/옵션에 따라 패치 바이트는 달라질 수 있지만 복원 ISO는 같아야 합니다. 생성한 게임 자료나 폰트를 커밋하지 마세요.

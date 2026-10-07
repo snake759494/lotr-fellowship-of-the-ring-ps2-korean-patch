@@ -167,6 +167,15 @@ for f in sdu_files():
 print('UI 슬롯 수 분포', nslot)
 print(f'UI {nui}/{len(ui_en)}, 자막 엔트리 {nsub}, 자막 최대 {maxlen}바이트, 음절 {len(chars)}')
 
+# ---------------------------------------------------------------- 동영상 자막(VDU)
+import glob as _glob, movie_sub
+for sub in sorted(_glob.glob('movie/subs/*.tsv')):
+    name = os.path.basename(sub)[:-4]
+    src = _glob.glob(f'work/orig/ENGLISH/LEVELS/*/{name}/{name}.VDU')[0]
+    print('동영상', name)
+    data = movie_sub.process(open(src, 'rb').read(), movie_sub.load_subs(sub), f'{OUT}/tmp.ipu')
+    changed['/' + rel(src)] = data
+
 # ---------------------------------------------------------------- 코드
 with open(f'{KFONT_DIR}/kset.h', 'w') as w:
     w.write('const KSet kset[2] = { ' + ', '.join('{%d,%d,%d,%d,%d,%d,%d,0}' % k for k in ksets) + ' };\n')
@@ -205,6 +214,10 @@ for lui_va, add_va in ((0x10006c, 0x100074), (0x35ddfc, 0x35de08)):
 assert get32(0x3b6a44) == 0x46615c        # sbrk 시작 포인터
 put32(0x3b6a44, heap)
 print(f'코드/글리프 {len(kcode)} 바이트, 힙 시작 0x{heap:x}')
+# 카메라(오른쪽 스틱) 좌우 반전: 가로축의 왼쪽(+0x64)/오른쪽(+0x68) 크기 저장 위치를 맞바꾼다
+for va, old, new in ((0x146248, 0x68, 0x64), (0x14625c, 0x64, 0x68), (0x146274, 0x64, 0x68), (0x146284, 0x68, 0x64)):
+    w = get32(va); assert w & 0xffff == old, hex(w)
+    put32(va, (w & 0xffff0000) | new)
 # 원래 함수 -> 새 코드 점프
 assert get32(0x23f1c0) == 0x2403003c and get32(0x23f638) == 0x00a0482d
 put32(0x23f1c0, 0x08000000 | (0x466180 >> 2)); put32(0x23f1c4, 0)
