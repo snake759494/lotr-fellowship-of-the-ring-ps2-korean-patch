@@ -1,0 +1,15 @@
+*.iso
+*.ISO
+*.xdelta
+*.exe
+*.dll
+*.ttf
+*.otf
+*.bin
+*.elf
+*.o
+*.pyc
+__pycache__/
+work/
+translation/*_en.tsv
+tools/kfont/kset.h

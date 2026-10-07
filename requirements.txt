@@ -1,0 +1,4 @@
+Pillow
+numpy
+pycdlib
+ziglang==0.16.0

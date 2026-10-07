@@ -1,0 +1,11 @@
+{
+  "tag": "v1.0",
+  "game": "The Lord of the Rings: The Fellowship of the Ring (USA)",
+  "serial": "SLUS-20520",
+  "source_sha256": "c966d5f65ce6308ca8c1afe0f0b8dfa2dd41b642ca7959d59034c2bce989ddb2",
+  "output_sha256": "89ff6b97fb124a8504c1c240b884c79e8edc006d53c2dc763b90f5aedcff1ecf",
+  "patch_sha256": "1be9acde8e0c444941c7cabd0b3470a681d8a52ef81dfa5d1a20048a88f10b01",
+  "patch_bytes": 1322948,
+  "asset": "LOTR_Fellowship_of_the_Ring_KO_v1.0.xdelta",
+  "runtime_scope": "PCSX2 boot/menu/early gameplay/cutscene subtitles checked; full game, save/load and hardware unverified"
+}
